@@ -1,0 +1,8 @@
+# Core dependencies
+streamlit>=1.31.0
+pandas>=2.0.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Optional: For enhanced AI-powered scoring
+openai>=1.12.0
