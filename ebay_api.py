@@ -19,6 +19,22 @@ class EbayAPIClient:
         if self.access_token and self.token_expiry and datetime.now() < self.token_expiry:
             return self.access_token
 
+        # Validate credentials are set
+        if not self.config.EBAY_APP_ID or not self.config.EBAY_CERT_ID:
+            raise Exception(
+                "eBay credentials not configured. Please set EBAY_APP_ID and EBAY_CERT_ID in your .env file.\n"
+                f"Environment: {self.config.EBAY_ENVIRONMENT}\n"
+                "Get credentials from: https://developer.ebay.com/my/keys"
+            )
+
+        # Validate credentials don't contain placeholder text
+        if 'your_' in self.config.EBAY_APP_ID.lower() or 'your_' in self.config.EBAY_CERT_ID.lower():
+            raise Exception(
+                "eBay credentials contain placeholder text. Please replace with actual credentials.\n"
+                f"Environment: {self.config.EBAY_ENVIRONMENT}\n"
+                "Get credentials from: https://developer.ebay.com/my/keys"
+            )
+
         # Create credentials string
         credentials = f"{self.config.EBAY_APP_ID}:{self.config.EBAY_CERT_ID}"
         b64_credentials = base64.b64encode(credentials.encode()).decode()
@@ -39,7 +55,12 @@ class EbayAPIClient:
             'scope': scope
         }
 
-        response = requests.post(self.config.get_oauth_url(), headers=headers, data=data)
+        oauth_url = self.config.get_oauth_url()
+
+        try:
+            response = requests.post(oauth_url, headers=headers, data=data, timeout=10)
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Network error connecting to eBay API: {str(e)}")
 
         if response.status_code == 200:
             token_data = response.json()
@@ -49,7 +70,27 @@ class EbayAPIClient:
             self.token_expiry = datetime.now() + timedelta(seconds=expires_in)
             return self.access_token
         else:
-            raise Exception(f"Failed to get access token: {response.status_code} - {response.text}")
+            error_msg = f"Failed to get access token: {response.status_code} - {response.text}\n\n"
+            error_msg += f"Environment: {self.config.EBAY_ENVIRONMENT.upper()}\n"
+            error_msg += f"OAuth URL: {oauth_url}\n\n"
+
+            if response.status_code == 401:
+                error_msg += "TROUBLESHOOTING 401 ERROR:\n"
+                error_msg += "1. Verify you're using the correct credentials for your environment:\n"
+                if self.config.EBAY_ENVIRONMENT == 'sandbox':
+                    error_msg += "   - For SANDBOX: Use 'Application Keys (Sandbox)' from https://developer.ebay.com/my/keys\n"
+                    error_msg += "   - NOT production keys!\n"
+                else:
+                    error_msg += "   - For PRODUCTION: Use 'Application Keys (Production)' from https://developer.ebay.com/my/keys\n"
+                    error_msg += "   - NOT sandbox keys!\n"
+                error_msg += "2. Check that your App ID (Client ID) and Cert ID (Client Secret) are correct\n"
+                error_msg += "3. Ensure there are no extra spaces or newlines in your credentials\n"
+                error_msg += "4. Verify your eBay developer account is in good standing\n"
+                if self.config.EBAY_ENVIRONMENT == 'sandbox':
+                    error_msg += "5. For sandbox, make sure you've accepted the sandbox user agreement\n"
+                    error_msg += "6. Try regenerating your sandbox keyset if the error persists\n"
+
+            raise Exception(error_msg)
 
     def search_items(
         self,
@@ -202,3 +243,36 @@ class EbayAPIClient:
         except Exception as e:
             print(f"Failed to search completed items: {str(e)}")
             return []
+
+    def test_credentials(self) -> Dict:
+        """
+        Test eBay API credentials and connection
+
+        Returns:
+            Dictionary with test results and diagnostic information
+        """
+        result = {
+            'success': False,
+            'environment': self.config.EBAY_ENVIRONMENT,
+            'oauth_url': self.config.get_oauth_url(),
+            'api_url': self.config.get_api_base_url(),
+            'has_app_id': bool(self.config.EBAY_APP_ID),
+            'has_cert_id': bool(self.config.EBAY_CERT_ID),
+            'app_id_length': len(self.config.EBAY_APP_ID) if self.config.EBAY_APP_ID else 0,
+            'cert_id_length': len(self.config.EBAY_CERT_ID) if self.config.EBAY_CERT_ID else 0,
+            'error': None,
+            'token_obtained': False
+        }
+
+        try:
+            # Try to get access token
+            token = self._get_access_token()
+            result['success'] = True
+            result['token_obtained'] = True
+            result['token_length'] = len(token) if token else 0
+            result['message'] = f"✅ Successfully authenticated with eBay {self.config.EBAY_ENVIRONMENT.upper()} API"
+        except Exception as e:
+            result['error'] = str(e)
+            result['message'] = f"❌ Authentication failed: {str(e)}"
+
+        return result
