@@ -87,7 +87,17 @@ EBAY_MARKETPLACE=EBAY_GB
 EBAY_CURRENCY=GBP
 ```
 
-### 4. Run the App
+### 4. Test Your Credentials (Recommended)
+
+Before running the main app, test your eBay API credentials:
+
+```bash
+python test_credentials.py
+```
+
+This will verify your credentials are working and provide helpful diagnostic information if there are any issues.
+
+### 5. Run the App
 
 ```bash
 streamlit run app.py
@@ -160,14 +170,15 @@ Target Discount: 25%
 
 ```
 deal-finder-ebay/
-├── app.py              # Main Streamlit application
-├── ebay_api.py         # eBay Browse API client
-├── scorer.py           # Deal scoring algorithms
-├── ai_scorer.py        # AI-enhanced scoring with Anthropic Claude
-├── config.py           # Configuration management
-├── requirements.txt    # Python dependencies
-├── .env.example        # Example environment variables
-└── README.md          # This file
+├── app.py                 # Main Streamlit application
+├── ebay_api.py            # eBay Browse API client
+├── scorer.py              # Deal scoring algorithms
+├── ai_scorer.py           # AI-enhanced scoring with Anthropic Claude
+├── config.py              # Configuration management
+├── test_credentials.py    # Credential testing utility
+├── requirements.txt       # Python dependencies
+├── .env.example           # Example environment variables
+└── README.md             # This file
 ```
 
 ### How It Works
@@ -256,12 +267,34 @@ Planned features for v2:
 
 ### "Failed to get access token" / 401 Authentication Error
 
-- Check your eBay API credentials in `.env`
-- **Ensure environment matches credentials**:
-  - Sandbox credentials → `EBAY_ENVIRONMENT=sandbox`
-  - Production credentials → `EBAY_ENVIRONMENT=production`
-- Verify credentials are copied correctly (no extra spaces)
-- Check that your app is approved for the Browse API scope
+This is the most common issue with eBay API setup. Follow these steps:
+
+1. **Run the test utility first**:
+   ```bash
+   python test_credentials.py
+   ```
+   This will help diagnose the exact issue.
+
+2. **Verify you're using the correct credentials for your environment**:
+   - **Sandbox**: Use credentials from "Application Keys (Sandbox)" section at https://developer.ebay.com/my/keys
+   - **Production**: Use credentials from "Application Keys (Production)" section
+   - ⚠️ **DO NOT** use production credentials with `EBAY_ENVIRONMENT=sandbox` or vice versa!
+
+3. **Check your .env file**:
+   - Copy `.env.example` to `.env` if you haven't already
+   - Ensure no extra spaces or newlines in credentials
+   - Make sure credentials are not wrapped in quotes
+   - Verify credentials don't contain placeholder text like "your_app_id_here"
+
+4. **Common sandbox issues**:
+   - Sandbox credentials expire if not used regularly - try regenerating them
+   - Make sure you've accepted the sandbox user agreement on eBay Developer Portal
+   - Verify your eBay developer account is active and in good standing
+
+5. **If still failing**:
+   - Try regenerating your keyset on eBay Developer Portal
+   - Wait a few minutes after generating new keys before testing
+   - Clear any cached tokens by restarting the application
 
 ### "No items found"
 
