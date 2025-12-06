@@ -1,0 +1,47 @@
+[Unit]
+Description=eBay Marketplace Account Deletion/Closure Notification Server
+Documentation=https://developer.ebay.com/api-docs/sell/account/resources/subscription/methods/createSubscription
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+
+# Set the working directory to your application path
+WorkingDirectory=/path/to/deal-finder-ebay
+
+# Set the PATH to include your virtual environment
+Environment="PATH=/path/to/deal-finder-ebay/venv/bin"
+
+# Load environment variables from .env file
+EnvironmentFile=/path/to/deal-finder-ebay/.env
+
+# Start the notification server using gunicorn
+ExecStart=/path/to/deal-finder-ebay/venv/bin/gunicorn \
+    --workers 4 \
+    --worker-class sync \
+    --bind 127.0.0.1:5000 \
+    --timeout 30 \
+    --keep-alive 5 \
+    --access-logfile /var/log/ebay-notifications/access.log \
+    --error-logfile /var/log/ebay-notifications/error.log \
+    --log-level info \
+    notification_server:app
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/path/to/deal-finder-ebay /var/log/ebay-notifications
+
+# Resource limits
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

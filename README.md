@@ -164,21 +164,59 @@ Min Feedback: 50
 Target Discount: 25%
 ```
 
+## eBay Notification Server
+
+This project includes a notification server for handling eBay marketplace account deletion/closure notifications (required for GDPR/CCPA compliance).
+
+### Quick Setup
+
+```bash
+# 1. Generate verification token
+python3 generate_notification_token.py
+
+# 2. Add to .env file
+EBAY_NOTIFICATION_VERIFICATION_TOKEN=your_generated_token
+
+# 3. Run notification server
+python3 notification_server.py
+```
+
+### Features
+
+- **Challenge/Response Validation**: Automatically validates endpoint ownership
+- **Notification Processing**: Handles account deletion notifications
+- **HTTPS Support**: Works with nginx/caddy reverse proxy
+- **Logging**: Records all notifications for compliance
+- **Health Checks**: Monitor server status
+
+### Full Documentation
+
+See **[NOTIFICATION_SETUP.md](NOTIFICATION_SETUP.md)** for complete setup instructions including:
+- Production deployment with systemd
+- HTTPS configuration with nginx/Let's Encrypt
+- eBay Developer Portal configuration
+- Troubleshooting guide
+
 ## Architecture
 
 ### Project Structure
 
 ```
 deal-finder-ebay/
-├── app.py                 # Main Streamlit application
-├── ebay_api.py            # eBay Browse API client
-├── scorer.py              # Deal scoring algorithms
-├── ai_scorer.py           # AI-enhanced scoring with Anthropic Claude
-├── config.py              # Configuration management
-├── test_credentials.py    # Credential testing utility
-├── requirements.txt       # Python dependencies
-├── .env.example           # Example environment variables
-└── README.md             # This file
+├── app.py                          # Main Streamlit application
+├── ebay_api.py                     # eBay Browse API client
+├── scorer.py                       # Deal scoring algorithms
+├── ai_scorer.py                    # AI-enhanced scoring with Anthropic Claude
+├── config.py                       # Configuration management
+├── notification_server.py          # eBay notification webhook server
+├── generate_notification_token.py  # Token generator utility
+├── test_credentials.py             # Credential testing utility
+├── requirements.txt                # Python dependencies
+├── .env.example                    # Example environment variables
+├── nginx.conf.example              # Nginx configuration template
+├── ebay-notifications.service      # systemd service file
+├── NOTIFICATION_SETUP.md           # Notification server setup guide
+└── README.md                       # This file
 ```
 
 ### How It Works
