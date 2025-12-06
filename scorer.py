@@ -85,10 +85,16 @@ class DealScorer:
         seller = item.get('seller', {})
 
         # Feedback score (number of ratings)
-        feedback_score = seller.get('feedbackScore', 0)
+        try:
+            feedback_score = int(seller.get('feedbackScore', 0))
+        except (ValueError, TypeError):
+            feedback_score = 0
 
         # Feedback percentage (positive %)
-        feedback_pct = seller.get('feedbackPercentage', 0)
+        try:
+            feedback_pct = float(seller.get('feedbackPercentage', 0))
+        except (ValueError, TypeError):
+            feedback_pct = 0.0
 
         # Score components
         score = 0.0
@@ -285,8 +291,14 @@ class DealScorer:
 
         # Seller reasoning
         seller = item.get('seller', {})
-        feedback_score = seller.get('feedbackScore', 0)
-        feedback_pct = seller.get('feedbackPercentage', 0)
+        try:
+            feedback_score = int(seller.get('feedbackScore', 0))
+        except (ValueError, TypeError):
+            feedback_score = 0
+        try:
+            feedback_pct = float(seller.get('feedbackPercentage', 0))
+        except (ValueError, TypeError):
+            feedback_pct = 0.0
 
         if feedback_score >= 1000 and feedback_pct >= 99:
             reasons.append(f"Excellent seller ({feedback_score} feedback, {feedback_pct}% positive)")
