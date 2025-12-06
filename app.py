@@ -8,6 +8,7 @@ import os
 from config import Config
 from ebay_api import EbayAPIClient
 from scorer import DealScorer
+from ai_scorer import AIEnhancedScorer
 
 # Page configuration
 st.set_page_config(
@@ -26,6 +27,8 @@ if 'api_client' not in st.session_state:
     st.session_state.api_client = None
 if 'scorer' not in st.session_state:
     st.session_state.scorer = DealScorer()
+if 'ai_scorer' not in st.session_state:
+    st.session_state.ai_scorer = AIEnhancedScorer()
 
 
 def check_credentials():
@@ -116,6 +119,17 @@ def search_deals(
         # Sort by overall score (descending)
         scored_deals.sort(key=lambda x: x['scores']['overall_score'], reverse=True)
 
+        # Optionally enhance top deals with AI
+        if st.session_state.ai_scorer.is_available():
+            with st.spinner("Adding AI insights to top deals..."):
+                for deal in scored_deals[:5]:  # Only enhance top 5 to save API costs
+                    ai_enhancement = st.session_state.ai_scorer.enhance_deal_analysis(
+                        deal['item'],
+                        deal['scores'],
+                        market_price
+                    )
+                    deal['ai_enhancement'] = ai_enhancement
+
         return scored_deals
 
     except Exception as e:
@@ -191,6 +205,25 @@ def display_deal_card(deal: Dict, index: int):
             st.markdown("**Deal Analysis:**")
             st.info(reasoning)
 
+            # AI Enhancement (if available)
+            if 'ai_enhancement' in deal and deal['ai_enhancement'].get('enhanced'):
+                ai = deal['ai_enhancement']
+                st.markdown("**🤖 AI Insights (Claude):**")
+
+                # Recommendation badge
+                rec = ai.get('recommendation', 'Consider')
+                if 'Buy' in rec:
+                    st.success(f"✅ {rec}")
+                elif 'Pass' in rec:
+                    st.error(f"❌ {rec}")
+                else:
+                    st.warning(f"⚠️ {rec}")
+
+                # Risk assessment
+                risk = ai.get('risk_assessment', 'Medium')
+                risk_emoji = "🟢" if 'Low' in risk else ("🔴" if 'High' in risk else "🟡")
+                st.markdown(f"**Risk:** {risk_emoji} {risk}")
+
             # Detailed scores
             score_col1, score_col2, score_col3, score_col4 = st.columns(4)
             with score_col1:
@@ -213,6 +246,22 @@ def main():
     st.title("🔍 eBay Smart Deal Finder")
     st.markdown("Find underpriced items on eBay using intelligent scoring and market analysis")
 
+    # Status bar
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        env = Config.EBAY_ENVIRONMENT.upper()
+        env_color = "🟢" if env == "PRODUCTION" else "🟡"
+        st.info(f"{env_color} Environment: **{env}**")
+    with col2:
+        if st.session_state.ai_scorer.is_available():
+            st.success("🤖 AI Enhanced")
+        else:
+            st.warning("📊 Standard Mode")
+    with col3:
+        st.metric("Marketplace", Config.EBAY_MARKETPLACE)
+
+    st.divider()
+
     # Check credentials
     is_valid, missing = check_credentials()
 
@@ -222,11 +271,14 @@ def main():
         ### Setup Instructions:
 
         1. Get your eBay API credentials from [eBay Developer Portal](https://developer.ebay.com/my/keys)
+           - For testing: use **Sandbox** credentials
+           - For live data: use **Production** credentials
         2. Copy `.env.example` to `.env`
         3. Add your credentials to the `.env` file:
            - `EBAY_APP_ID`
            - `EBAY_CERT_ID`
            - `EBAY_DEV_ID`
+           - `EBAY_ENVIRONMENT` (set to 'sandbox' or 'production')
         4. Restart the application
 
         **Missing credentials:** {missing}

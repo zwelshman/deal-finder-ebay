@@ -26,6 +26,13 @@ A Streamlit web application that helps you find underpriced items on eBay using 
 
 - **Export Functionality**: Download results as CSV for offline analysis
 
+- **AI-Enhanced Scoring** (Optional): Use Anthropic's Claude to provide intelligent deal analysis with:
+  - Contextual deal reasoning
+  - Risk assessment (Low/Medium/High)
+  - Buy/Consider/Pass recommendations
+
+- **Sandbox Support**: Test with eBay sandbox environment before using production credentials
+
 ## Setup
 
 ### 1. eBay API Credentials
@@ -35,7 +42,9 @@ You'll need to register for eBay API access:
 1. Go to [eBay Developer Portal](https://developer.ebay.com/)
 2. Sign in or create an account
 3. Navigate to "My Account" → "Keys"
-4. Create a new keyset for production use
+4. Create a keyset:
+   - **Sandbox keys** for testing (limited test data)
+   - **Production keys** for live eBay data
 5. Note down your:
    - App ID (Client ID)
    - Cert ID (Client Secret)
@@ -60,12 +69,18 @@ cp .env.example .env
 Edit `.env` file with your credentials:
 
 ```bash
+# eBay API Credentials
 EBAY_APP_ID=your_app_id_here
 EBAY_CERT_ID=your_cert_id_here
 EBAY_DEV_ID=your_dev_id_here
 
-# Optional: For enhanced AI features
-OPENAI_API_KEY=your_openai_key_here
+# Environment: 'sandbox' for testing, 'production' for live data
+# IMPORTANT: Use sandbox credentials with sandbox, production credentials with production
+EBAY_ENVIRONMENT=sandbox
+
+# Optional: For AI-enhanced deal analysis with Claude
+# Get your key from: https://console.anthropic.com/
+ANTHROPIC_API_KEY=your_anthropic_key_here
 
 # Marketplace (default: eBay UK)
 EBAY_MARKETPLACE=EBAY_GB
@@ -148,6 +163,7 @@ deal-finder-ebay/
 ├── app.py              # Main Streamlit application
 ├── ebay_api.py         # eBay Browse API client
 ├── scorer.py           # Deal scoring algorithms
+├── ai_scorer.py        # AI-enhanced scoring with Anthropic Claude
 ├── config.py           # Configuration management
 ├── requirements.txt    # Python dependencies
 ├── .env.example        # Example environment variables
@@ -165,6 +181,7 @@ deal-finder-ebay/
    - Calculates median market price from similar items
    - Scores each listing across 4 dimensions
    - Generates human-readable reasoning
+   - Optionally enhances top deals with AI insights from Claude
 
 3. **Display Phase**:
    - Ranks results by overall score
@@ -214,13 +231,22 @@ Tips to stay within limits:
 - Set reasonable price ranges
 - Limit results per search (default: 50)
 
+### AI-Enhanced Scoring
+
+When you provide an Anthropic API key, the app automatically enhances the top 5 deals with AI insights:
+
+- **Contextual Reasoning**: Claude analyzes the full context of each deal
+- **Risk Assessment**: Identifies potential red flags or concerns
+- **Actionable Recommendations**: Clear Buy/Consider/Pass guidance
+
+The AI enhancement is optional - the app works perfectly fine without it using rule-based scoring.
+
 ## Future Enhancements
 
 Planned features for v2:
 
 - **Background Monitoring**: Save watch rules and get periodic email alerts
 - **Multiple Marketplaces**: Support eBay US, DE, AU, etc.
-- **AI-Enhanced Scoring**: Use OpenAI for smarter price predictions
 - **Push Notifications**: Real-time alerts via mobile app/PWA
 - **Historical Tracking**: Track price trends over time
 - **Category Specialization**: Custom scoring for different item types
@@ -228,11 +254,14 @@ Planned features for v2:
 
 ## Troubleshooting
 
-### "Failed to get access token"
+### "Failed to get access token" / 401 Authentication Error
 
 - Check your eBay API credentials in `.env`
-- Ensure credentials are for production (not sandbox)
-- Verify your app has the correct OAuth scopes
+- **Ensure environment matches credentials**:
+  - Sandbox credentials → `EBAY_ENVIRONMENT=sandbox`
+  - Production credentials → `EBAY_ENVIRONMENT=production`
+- Verify credentials are copied correctly (no extra spaces)
+- Check that your app is approved for the Browse API scope
 
 ### "No items found"
 

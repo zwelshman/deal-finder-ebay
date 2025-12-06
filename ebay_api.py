@@ -28,12 +28,18 @@ class EbayAPIClient:
             'Authorization': f'Basic {b64_credentials}'
         }
 
+        # Scope differs between sandbox and production
+        if self.config.EBAY_ENVIRONMENT == 'production':
+            scope = 'https://api.ebay.com/oauth/api_scope'
+        else:
+            scope = 'https://api.ebay.com/oauth/api_scope'
+
         data = {
             'grant_type': 'client_credentials',
-            'scope': 'https://api.ebay.com/oauth/api_scope'
+            'scope': scope
         }
 
-        response = requests.post(self.config.EBAY_OAUTH_URL, headers=headers, data=data)
+        response = requests.post(self.config.get_oauth_url(), headers=headers, data=data)
 
         if response.status_code == 200:
             token_data = response.json()
@@ -109,7 +115,7 @@ class EbayAPIClient:
         if category_id:
             params['category_ids'] = category_id
 
-        url = f"{self.config.EBAY_API_BASE_URL}/buy/browse/v1/item_summary/search"
+        url = f"{self.config.get_api_base_url()}/buy/browse/v1/item_summary/search"
 
         try:
             response = requests.get(url, headers=headers, params=params)
@@ -139,7 +145,7 @@ class EbayAPIClient:
             'X-EBAY-C-MARKETPLACE-ID': self.config.EBAY_MARKETPLACE
         }
 
-        url = f"{self.config.EBAY_API_BASE_URL}/buy/browse/v1/item/{item_id}"
+        url = f"{self.config.get_api_base_url()}/buy/browse/v1/item/{item_id}"
 
         try:
             response = requests.get(url, headers=headers)
@@ -183,7 +189,7 @@ class EbayAPIClient:
             'filter': 'buyingOptions:{FIXED_PRICE}'
         }
 
-        url = f"{self.config.EBAY_API_BASE_URL}/buy/browse/v1/item_summary/search"
+        url = f"{self.config.get_api_base_url()}/buy/browse/v1/item_summary/search"
 
         try:
             response = requests.get(url, headers=headers, params=params)
