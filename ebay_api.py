@@ -159,13 +159,38 @@ class EbayAPIClient:
         url = f"{self.config.get_api_base_url()}/buy/browse/v1/item_summary/search"
 
         try:
-            response = requests.get(url, headers=headers, params=params)
+            response = requests.get(url, headers=headers, params=params, timeout=10)
 
             if response.status_code == 200:
                 data = response.json()
-                return data.get('itemSummaries', [])
+                items = data.get('itemSummaries', [])
+
+                # Debug logging
+                print(f"\n=== eBay API Search Debug ===")
+                print(f"Environment: {self.config.EBAY_ENVIRONMENT}")
+                print(f"URL: {url}")
+                print(f"Query: {params.get('q')}")
+                print(f"Filters: {params.get('filter', 'None')}")
+                print(f"Response Status: {response.status_code}")
+                print(f"Total Results: {data.get('total', 0)}")
+                print(f"Items Returned: {len(items)}")
+
+                # If no items, show more details from the response
+                if not items:
+                    print(f"Full Response Keys: {list(data.keys())}")
+                    if 'warnings' in data:
+                        print(f"Warnings: {data['warnings']}")
+                    if 'errors' in data:
+                        print(f"Errors: {data['errors']}")
+                print(f"=== End Debug ===\n")
+
+                return items
             else:
                 raise Exception(f"eBay API error: {response.status_code} - {response.text}")
+        except requests.exceptions.Timeout:
+            raise Exception(f"eBay API request timed out after 10 seconds")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Network error during search: {str(e)}")
         except Exception as e:
             raise Exception(f"Failed to search items: {str(e)}")
 
