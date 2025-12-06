@@ -85,7 +85,24 @@ def search_deals(
             )
 
         if not items:
-            st.warning("No items found matching your criteria.")
+            st.warning("⚠️ No items found matching your criteria.")
+
+            # Check console/logs for debug information
+            env = st.session_state.api_client.config.EBAY_ENVIRONMENT
+            st.info(f"""
+**Environment:** {env.upper()}
+
+**Possible reasons:**
+- Your search criteria may be too restrictive (try broader keywords or remove filters)
+- {"**Sandbox has very limited test data** - try simple searches like 'laptop' or 'phone'" if env == 'sandbox' else "No active listings match your criteria"}
+- Check the console/terminal for detailed API debug information
+
+**Suggestions:**
+- Try searching for a common item (e.g., "laptop", "phone", "watch")
+- Remove or relax price filters
+- Remove minimum feedback score requirement
+- {"**Consider using Production environment for real listings** (update EBAY_ENVIRONMENT in .env)" if env == 'sandbox' else "Try different keywords"}
+            """)
             return []
 
         # Get market price from similar items
